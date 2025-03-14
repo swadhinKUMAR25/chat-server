@@ -1,7 +1,16 @@
 const express = require('express');
 const app = express();
 const http = require('http').Server(app);
-const io = require('socket.io')(http);
+const io = require('socket.io')(http, {
+  cors: {
+    origin: '*', // Change to your frontend URL for production
+    methods: ['GET', 'POST']
+  }
+});
+const cors = require('cors');
+
+// Allow all origins (for development purposes only)
+app.use(cors("*")); // Change "*" to a specific domain for production
 
 // Serve the chat HTML page
 app.get('/', (req, res) => {

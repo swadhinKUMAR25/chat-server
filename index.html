@@ -12,9 +12,14 @@
   <body>
     <ul id="messages"></ul>
     <input id="m" autocomplete="off" /><button onclick="send()">Send</button>
-    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Load Socket.IO client from CDN -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-z9qxP6u5M+BI7Rou1cxy4+RG6AFYWyhjOQXszLjpZqfxkYSzXb45kVD0qT2Qd8Puz" crossorigin="anonymous"></script>
+    
     <script>
-      var socket = io();
+      // Replace 'https://your-chat-server.com' with your actual deployed server URL
+      var socket = io('https://your-chat-server.com'); // e.g., https://my-chat-app.herokuapp.com
+
       function send() {
         var msg = document.getElementById('m').value;
         if (msg) {
@@ -22,11 +27,13 @@
           document.getElementById('m').value = '';
         }
       }
+
       socket.on('chat message', function(msg) {
         var li = document.createElement('li');
         li.appendChild(document.createTextNode(msg));
         document.getElementById('messages').appendChild(li);
       });
+
       document.getElementById('m').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') send();
       });
