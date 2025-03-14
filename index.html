@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Zimbra Custom Chat</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      #messages { list-style-type: none; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #f0f0f0; }
+    </style>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+    <input id="m" autocomplete="off" /><button onclick="send()">Send</button>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+      function send() {
+        var msg = document.getElementById('m').value;
+        if (msg) {
+          socket.emit('chat message', msg);
+          document.getElementById('m').value = '';
+        }
+      }
+      socket.on('chat message', function(msg) {
+        var li = document.createElement('li');
+        li.appendChild(document.createTextNode(msg));
+        document.getElementById('messages').appendChild(li);
+      });
+      document.getElementById('m').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') send();
+      });
+    </script>
+  </body>
+</html>
