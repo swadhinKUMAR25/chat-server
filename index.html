@@ -13,12 +13,15 @@
     <ul id="messages"></ul>
     <input id="m" autocomplete="off" /><button onclick="send()">Send</button>
     
-    <!-- Load Socket.IO client from CDN -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-z9qxP6u5M+BI7Rou1cxy4+RG6AFYWyhjOQXszLjpZqfxkYSzXb45kVD0qT2Qd8Puz" crossorigin="anonymous"></script>
+    <!-- Use a simpler CDN without integrity check -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     
     <script>
-      // Replace 'https://your-chat-server.com' with your actual deployed server URL
-      var socket = io('https://your-chat-server.com'); // e.g., https://my-chat-app.herokuapp.com
+      // Connect to the same host (works if client and server are on the same domain)
+      var socket = io(); 
+      
+      // For Render deployment, uncomment and replace with your actual URL if needed:
+      // var socket = io('https://your-app-name.onrender.com');
 
       function send() {
         var msg = document.getElementById('m').value;

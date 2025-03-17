@@ -3,32 +3,25 @@ const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http, {
   cors: {
-    origin: '*', // Change to your frontend URL for production
+    origin: '*', // Adjust for production
     methods: ['GET', 'POST']
   }
 });
-const cors = require('cors');
 
-// Allow all origins (for development purposes only)
-app.use(cors("*")); // Change "*" to a specific domain for production
+// Serve static files from the current directory
+app.use(express.static(__dirname));
 
-// Serve the chat HTML page
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
-
-// Handle Socket.IO connections
 io.on('connection', (socket) => {
   console.log('A user connected');
   socket.on('chat message', (msg) => {
-    io.emit('chat message', msg); // Broadcast message to all users
+    io.emit('chat message', msg);
   });
   socket.on('disconnect', () => {
     console.log('A user disconnected');
   });
 });
 
-// Start the server
-http.listen(3000, () => {
-  console.log('Chat server running on port 3000');
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+  console.log(`Chat server running on port ${PORT}`);
 });
