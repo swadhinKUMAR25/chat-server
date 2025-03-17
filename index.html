@@ -13,16 +13,13 @@
     <ul id="messages"></ul>
     <input id="m" autocomplete="off" /><button onclick="send()">Send</button>
     
-    <!-- Use a simpler CDN without integrity check -->
+    <!-- Load Socket.IO client from CDN without integrity for simplicity -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     
     <script>
-      // Connect to the same host (works if client and server are on the same domain)
-      var socket = io(); 
+      // Connect to the same host (Render URL)
+      var socket = io(); // Works since client and server are on the same domain
       
-      // For Render deployment, uncomment and replace with your actual URL if needed:
-      // var socket = io('https://your-app-name.onrender.com');
-
       function send() {
         var msg = document.getElementById('m').value;
         if (msg) {

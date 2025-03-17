@@ -3,12 +3,11 @@ const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http, {
   cors: {
-    origin: '*', // Adjust for production
+    origin: '*', // Fine for testing; use your Render URL in production
     methods: ['GET', 'POST']
   }
 });
 
-// Serve static files from the current directory
 app.use(express.static(__dirname));
 
 io.on('connection', (socket) => {
