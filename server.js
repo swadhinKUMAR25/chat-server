@@ -179,7 +179,8 @@ res.send(`
           <input type="checkbox" id="remember" /> Remember me
         </label>
       </div>
-
+      
+      <div id="output" class="output">Waiting for messages from Zimbra...</div>
     </div>
     
     <div class="version-container">
@@ -223,7 +224,7 @@ res.send(`
     }
 
     window.addEventListener('message', function(event) {
-      // Removed console.log('Message received:', event.data, 'Origin:', event.origin);
+      console.log('Message received:', event.data, 'Origin:', event.origin);
       if (event.data === 'type=community-update') {
         outputDiv.style.display = 'block';
         outputDiv.innerHTML += '<p>Received community-update from ' + event.origin + ' at ' + new Date().toLocaleTimeString() + '</p>';
